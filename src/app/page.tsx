@@ -1,101 +1,153 @@
-import Image from "next/image";
+"use client";
+import React, { useState, useEffect } from "react";
+import {app} from "../../firebaseConfig";
+import { getAuth, User } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import {
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
+// import logo from "../images/au-logo.jpg";
+// import Image from "next/image";
 
-export default function Home() {
+const HomePage = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = async (e:React.FormEvent) => {
+    e.preventDefault();
+    const auth = getAuth(app);
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push("/student-dashboard");
+    } catch (error: any) {
+      console.error("Error signing in", error.message)
+    }
+  };
+
+  useEffect(() => {
+    const auth = getAuth(app);
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setUser(user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const signInWithGoogle = async () => {
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      router.push("/student-dashboard");
+    } catch (error: any) {
+      console.error("Error signing in", error.message);
+    }
+  };
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <main className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">
+      {/* Logo
+      <Image src={logo} alt="au-logo" width={150} className="mb-6" /> */}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+      {/* Login Form Container */}
+      <div className="w-full max-w-sm bg-white p-6 rounded-lg shadow-lg border">
+        <h1 className="text-2xl font-[OpenSans-Bold] text-center mb-6">
+          Login
+        </h1>
+
+        <form onSubmit={handleSubmit}>
+          {/* Email Input */}
+          <div className="mb-4">
+            <label className="block text-sm font-[OpenSans-Medium] text-gray-700 mb-1">
+              Email:
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e)=> setEmail(e.target.value)}
+              placeholder="Enter your email address"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              required
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+
+          {/* Password Input */}
+          <div>
+            <label className="block text-sm font-[OpenSans-Medium] text-gray-700 mb-1">
+              Password:
+            </label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e)=> setPassword(e.target.value)}
+              placeholder="Enter your password"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              required
+            />
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="text-blue-400 underline underline-offset-4"
+            >
+              Forgot password?
+            </button>
+          </div>
+
+          {/* Sign-In Button */}
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white font-bold py-2 rounded hover:bg-blue-600 transition duration-200 mt-4"
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            Sign in
+          </button>
+
+          {/* Sign in with Google Button
+          <button
+            type="button"
+            onClick={signInWithGoogle}
+            className="w-full bg-red-500 text-white font-bold py-2 rounded hover:bg-red-600 transition duration-200 mt-4 flex items-center justify-center"
+          >
+            <svg
+              className="w-5 h-5 mr-2"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M23.494 12.275c0-.855-.069-1.487-.214-2.136H12v4.132h6.604c-.33 1.663-1.452 3.089-3.154 4.125v3.388h5.051c2.953-2.698 4.694-6.647 4.694-11.509z" />
+              <path d="M12 24c3.337 0 6.12-1.108 8.15-2.993l-4.05-3.187c-1.14.771-2.596 1.24-4.1 1.24-3.136 0-5.785-2.114-6.736-4.96H0v3.177C2.042 20.372 6.715 24 12 24z" />
+              <path d="M5.264 14.613c-.256-.771-.4-1.591-.4-2.438s.144-1.667.4-2.438V6.56H0c-.809 1.569-1.264 3.344-1.264 5.122s.455 3.554 1.264 5.122l5.264-2.19z" />
+              <path d="M12 4.8c1.78 0 3.37.614 4.63 1.81l3.42-3.42C17.926.909 15.263 0 12 0 6.715 0 2.042 3.628 0 8.573l5.264 2.19c.951-2.846 3.6-4.96 6.736-4.96z" />
+            </svg>
+            Sign in with Google
+          </button> */}
+
+          <div className="mt-5 items-center justify-center flex">
+            <p>
+              Don't have an account?{" "}
+              <button
+                type="submit"
+                className="text-blue-400 underline underline-offset-4"
+              >
+                Register
+              </button>
+            </p>
+          </div>
+        </form>
+      </div>
+    </main>
   );
-}
+};
+
+export default HomePage;
