@@ -1,52 +1,65 @@
-"use client";
+"use client"
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { auth, firestore } from "../../../firebaseConfig";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import Link from "next/link";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null); // Success message for verification resend
   const router = useRouter();
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
-
+    setSuccess(null);
+  
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
+  
       if (user.emailVerified) {
-        const userDocRef = doc(firestore, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        let userRole = "student"; // Default role
-
-        if (userDoc.exists()) {
-          userRole = userDoc.data()?.role || "student";
-        } else {
-          // If user is logging in for the first time, assign them a default student role
-          await setDoc(userDocRef, { email: user.email, role: userRole });
+        // Check if the user is in the 'admins' collection
+        let userDocRef = doc(firestore, "admins", user.uid);
+        let userDoc = await getDoc(userDocRef);
+  
+        // If not found in 'admins', check the 'students' collection
+        if (!userDoc.exists()) {
+          userDocRef = doc(firestore, "students", user.uid);
+          userDoc = await getDoc(userDocRef);
         }
-
-        // Redirect based on role
-        if (userRole === "admin") {
-          router.push("/admin-dashboard");
+  
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+  
+          console.log("User data:", userData);
+  
+          // Redirect based on role
+          if (userData.role === "admin") {
+            router.push("/admin-dashboard");
+          } else if (userData.role === "student") {
+            router.push("/student-dashboard");
+          } else {
+            setError("Role not defined. Please contact support.");
+          }
         } else {
-          router.push("/student-dashboard");
+          setError("User data not found. Please contact support.");
         }
       } else {
+        // If email is not verified, send a verification email and notify the user
+        await sendEmailVerification(user);
+        setSuccess("Verification email sent! Please check your inbox.");
         setError("Please verify your email before logging in.");
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : "An unknown error occurred");
     }
   };
-
+  
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">
       <div className="w-full max-w-sm bg-white p-6 rounded-lg shadow-lg border">
@@ -80,6 +93,7 @@ const LoginPage = () => {
           </div>
 
           {error && <p className="text-red-500 text-sm text-center mb-2">{error}</p>}
+          {success && <p className="text-green-500 text-sm text-center mb-2">{success}</p>}
 
           <div className="flex justify-end mb-4">
             <button type="button" className="text-blue-400 underline">Forgot password?</button>

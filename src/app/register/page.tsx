@@ -5,6 +5,8 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
 } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { firestore } from "../../../firebaseConfig"; // Ensure Firestore is properly initialized in firebaseConfig.ts
 import { auth } from "../../../firebaseConfig";
 
 const RegisterPage = () => {
@@ -39,25 +41,19 @@ const RegisterPage = () => {
       );
       const user = userCredential.user;
 
-      await sendEmailVerification(user);
+      //Save student data in firestore
+      await setDoc(doc(firestore, "students", user.uid), {
+        firstName,
+        lastName,
+        email,
+        matricNumber,
+        faculty,
+        department,
+        level,
+        role: "student",
+        createdAt: new Date().toISOString(),
+      });
 
-      //Temporarily store user data in local storage
-      localStorage.setItem(
-        "registrationData",
-        JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          matricNumber,
-          faculty,
-          department,
-          level,
-        })
-      );
-
-      setMessage(
-        "Registration succesful, kindly check your email for verification"
-      );
 
       //Clear form fields
       setFirstName("");
@@ -69,6 +65,8 @@ const RegisterPage = () => {
       setLevel("");
       setPassword("");
       setConfirmPassword("");
+
+      router.push('/login')
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
@@ -274,24 +272,24 @@ const RegisterPage = () => {
           </div>
 
           <div className="flex space-x-4">
-          <div className="w-1/2">
-            <label
-              htmlFor="password"
-              className="block text-sm font-[OpenSans-Medium] text-gray-700 mb-1"
-            >
-              Password:
-            </label>
-            <input
-              type="text"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
+            <div className="w-1/2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-[OpenSans-Medium] text-gray-700 mb-1"
+              >
+                Password:
+              </label>
+              <input
+                type="text"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
 
-          <div className="w-1/2">
+            <div className="w-1/2">
               <label
                 htmlFor="confirmPassword"
                 className="block text-sm font-[OpenSans-Medium] text-gray-700 mb-1"
@@ -307,7 +305,6 @@ const RegisterPage = () => {
                 className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
             </div>
-
           </div>
           {error && <p className="text-red-500 text-sm">{error}</p>}
           {message && <p className="text-green-500 text-sm">{message}</p>}
