@@ -1,10 +1,7 @@
 "use client";
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import {
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-} from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "../../../firebaseConfig"; // Ensure Firestore is properly initialized in firebaseConfig.ts
 import { auth } from "../../../firebaseConfig";
@@ -54,7 +51,6 @@ const RegisterPage = () => {
         createdAt: new Date().toISOString(),
       });
 
-
       //Clear form fields
       setFirstName("");
       setLastName("");
@@ -66,7 +62,7 @@ const RegisterPage = () => {
       setPassword("");
       setConfirmPassword("");
 
-      router.push('/login')
+      router.push("/login");
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);

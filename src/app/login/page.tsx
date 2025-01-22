@@ -1,7 +1,10 @@
-"use client"
+"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+} from "firebase/auth";
 import { auth, firestore } from "../../../firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import Link from "next/link";
@@ -17,27 +20,31 @@ const LoginPage = () => {
     event.preventDefault();
     setError(null);
     setSuccess(null);
-  
+
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
-  
+
       if (user.emailVerified) {
         // Check if the user is in the 'admins' collection
         let userDocRef = doc(firestore, "admins", user.uid);
         let userDoc = await getDoc(userDocRef);
-  
+
         // If not found in 'admins', check the 'students' collection
         if (!userDoc.exists()) {
           userDocRef = doc(firestore, "students", user.uid);
           userDoc = await getDoc(userDocRef);
         }
-  
+
         if (userDoc.exists()) {
           const userData = userDoc.data();
-  
+
           console.log("User data:", userData);
-  
+
           // Redirect based on role
           if (userData.role === "admin") {
             router.push("/admin-dashboard");
@@ -56,10 +63,12 @@ const LoginPage = () => {
         setError("Please verify your email before logging in.");
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : "An unknown error occurred");
+      setError(
+        error instanceof Error ? error.message : "An unknown error occurred"
+      );
     }
   };
-  
+
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">
       <div className="w-full max-w-sm bg-white p-6 rounded-lg shadow-lg border">
@@ -67,7 +76,9 @@ const LoginPage = () => {
 
         <form onSubmit={handleLogin}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email:</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email:
+            </label>
             <input
               type="email"
               id="email"
@@ -80,7 +91,9 @@ const LoginPage = () => {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password:</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password:
+            </label>
             <input
               type="password"
               id="password"
@@ -92,11 +105,17 @@ const LoginPage = () => {
             />
           </div>
 
-          {error && <p className="text-red-500 text-sm text-center mb-2">{error}</p>}
-          {success && <p className="text-green-500 text-sm text-center mb-2">{success}</p>}
+          {error && (
+            <p className="text-red-500 text-sm text-center mb-2">{error}</p>
+          )}
+          {success && (
+            <p className="text-green-500 text-sm text-center mb-2">{success}</p>
+          )}
 
           <div className="flex justify-end mb-4">
-            <button type="button" className="text-blue-400 underline">Forgot password?</button>
+            <button type="button" className="text-blue-400 underline">
+              Forgot password?
+            </button>
           </div>
 
           <button
@@ -108,8 +127,10 @@ const LoginPage = () => {
 
           <div className="mt-5 text-center">
             <p>
-              Don't have an account?{" "}
-              <Link href="/register" className="text-blue-400 underline">Register</Link>
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="text-blue-400 underline">
+                Register
+              </Link>
             </p>
           </div>
         </form>

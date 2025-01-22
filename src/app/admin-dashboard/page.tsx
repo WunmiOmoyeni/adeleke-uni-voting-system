@@ -8,12 +8,12 @@ import { doc, getDoc } from "firebase/firestore";
 import LogoutModal from "@/components/logoutModal";
 
 const AdminDashboard = () => {
-  const [user, setUser] = useState<User | null>(null);
+  // const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
-  const [totalVoters, setTotalVoters] = useState<number>(0);
-  const [votesCast, setVotesCast] = useState<number>(0);
-  const [votingStatus, setVotingStatus] = useState<string>("Active");
-  const [recentActivity, setRecentActivity] = useState<string[]>([]);
+  // const [totalVoters, setTotalVoters] = useState<number>(0);
+  // const [votesCast, setVotesCast] = useState<number>(0);
+  // const [votingStatus, setVotingStatus] = useState<string>("Active");
+  // const [recentActivity, setRecentActivity] = useState<string[]>([]);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
@@ -21,7 +21,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setUser(user);
+        // setUser(user);
         const userDoc = await getDoc(doc(firestore, "admins", user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
@@ -101,30 +101,30 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-6">
           <div className="bg-white p-6 shadow-md rounded">
             <h3 className="text-[20px] font-[OpenSans-Bold]">Total Voters</h3>
-            <p className="text-3xl mt-2">{totalVoters}</p>
+            {/* <p className="text-3xl mt-2">{totalVoters}</p> */}
           </div>
 
           <div className="bg-white p-6 shadow-md rounded">
             <h3 className="text-[20px] font-[OpenSans-Bold]">Votes Cast</h3>
-            <p className="text-3xl mt-2">{votesCast}</p>
+            {/* <p className="text-3xl mt-2">{votesCast}</p> */}
           </div>
 
           <div className="bg-white p-6 shadow-md rounded">
             <h3 className="text-[20px] font-[OpenSans-Bold]">Voting Status</h3>
-            <p
+            {/* <p
               className={`text-2xl font-[OpenSans-Regular] mt-2 ${
                 votingStatus === "Active" ? "text-green-500" : "text-red-500"
               }`}
             >
               {votingStatus}
-            </p>
+            </p> */}
           </div>
         </div>
 
         {/* Recent Activity */}
         <div className="mt-8 bg-white p-6 shadow-md rounded">
           <h3 className="text-xl font-bold mb-4">Recent Activity</h3>
-          <ul className="list-disc pl-6">
+          {/* <ul className="list-disc pl-6">
             {recentActivity.length > 0 ? (
               recentActivity.map((activity, index) => (
                 <li key={index}>{activity}</li>
@@ -132,7 +132,7 @@ const AdminDashboard = () => {
             ) : (
               <p>No recent activity</p>
             )}
-          </ul>
+          </ul> */}
         </div>
       </main>
 
