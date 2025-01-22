@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, firestore } from "../../../firebaseConfig";
-import type { User } from "firebase/auth";
+// import type { User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import LogoutModal from "@/components/logoutModal";
 
