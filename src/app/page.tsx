@@ -9,57 +9,36 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         if (user.emailVerified) {
-          try {
-            const userDocRef = doc(firestore, "users", user.uid);
-            const userDoc = await getDoc(userDocRef);
+          let userDocRef = doc(firestore, "admins", user.uid)
+          let userDoc = await getDoc(userDocRef);
 
-            let userRole = "student"; // Default role
+          if (!userDoc.exists()) {
+            userDocRef = doc(firestore, "students", user.uid);
+            userDoc = await getDoc(userDocRef);
+          }
 
-            if (!userDoc.exists()) {
-              // Retrieve user data from local storage
-              const registrationData = localStorage.getItem("registrationData");
-              const {
-                firstName = "",
-                lastName = "",
-                matricNumber = "",
-                faculty = "",
-                department = "",
-                level = "",
-              } = registrationData ? JSON.parse(registrationData) : {};
-
-              await setDoc(userDocRef, {
-                firstName,
-                lastName,
-                matricNumber,
-                faculty,
-                department,
-                level,
-                email: user.email,
-                role: userRole, // Save role as "student" by default
-              });
-
-              localStorage.removeItem("registrationData");
-            } else {
-              userRole = userDoc.data()?.role || "student";
-            }
-
-            setUser(user);
-            setRole(userRole);
-
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+    
+            console.log("User data:", userData);
+    
             // Redirect based on role
-            if (userRole === "admin") {
+            if (userData.role === "admin") {
               router.push("/admin-dashboard");
-            } else {
+            } else if (userData.role === "student") {
               router.push("/student-dashboard");
+            } else {
+              setError("Role not defined. Please contact support.");
             }
-          } catch (error) {
-            console.error("Error fetching user data:", error);
+          } else {
+            setError("User data not found. Please contact support.");
           }
         } else {
           setUser(null);
