@@ -3,7 +3,7 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { firestore } from "../../../firebaseConfig"; // Ensure Firestore is properly initialized in firebaseConfig.ts
+import { firestore } from "../../../firebaseConfig"; 
 import { auth } from "../../../firebaseConfig";
 import Swal from "sweetalert2";
 

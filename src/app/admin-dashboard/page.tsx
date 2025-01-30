@@ -3,13 +3,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, firestore } from "../../../firebaseConfig";
-// import type { User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import LogoutModal from "@/components/logoutModal";
+import AdminSidebar from "@/components/adminSidebar";
 
 const AdminDashboard = () => {
   // const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [status, setStatus] = useState("Upcoming");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   // const [totalVoters, setTotalVoters] = useState<number>(0);
   // const [votesCast, setVotesCast] = useState<number>(0);
   // const [votingStatus, setVotingStatus] = useState<string>("Active");
@@ -17,6 +20,19 @@ const AdminDashboard = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
+
+  const handleSaveElectionData = async () => {
+    try {
+      await setDoc(doc(firestore, "election", "status"), {
+        status,
+        startDate,
+        endDate,
+      });
+      alert("Election details updated successfully");
+    } catch (error) {
+      console.error("Error updatingg election status: ", error);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -57,31 +73,7 @@ const AdminDashboard = () => {
       </button>
 
       {/* Sidebar */}
-      <aside className="w-full sm:w-64 bg-blue-900 text-white p-5">
-        <h2 className="text-2xl font-[OpenSans-Bold] mb-6">Admin Panel</h2>
-        <nav>
-          <ul className="space-y-4">
-            <li className="hover:bg-blue-700 p-2 rounded">
-              <a href="#">🏠 Dashboard</a>
-            </li>
-            <li className="hover:bg-blue-700 p-2 rounded">
-              <a href="/admin-dashboard/manage-candidates">
-                👤 Manage Candidates
-              </a>
-            </li>
-            <li className="hover:bg-blue-700 p-2 rounded">
-              <a href="#">🗳️ Registered Voters</a>
-            </li>
-            <li className="hover:bg-blue-700 p-2 rounded">
-              <a href="#">📊 View Results</a>
-            </li>
-            <li className="hover:bg-blue-700 p-2 rounded">
-              <a href="#">⚙️ Settings</a>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
+      <AdminSidebar/>
       {/* Main Content */}
       <main className="flex-1 p-6">
         {/* Header */}
@@ -133,6 +125,55 @@ const AdminDashboard = () => {
               <p>No recent activity</p>
             )}
           </ul> */}
+        </div>
+
+        {/* Manage Election Section */}
+        <div className="bg-white p-6 shadow-md rounded mt-8">
+          <h3 className="text-xl font-bold border-b pb-2 mb-4">
+            Manage Election
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cold-2 gap-4">
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Status: </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="border p-2 rounded w-full"
+              >
+                <option value="Upcoming">Upcoming</option>
+                <option value="Ongoing">Ongoing</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Start Date:</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border p-2 rounded w-full"
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">End Date:</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="border p-2 rounded w-full"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveElectionData}
+            className="bg-blue-500 text-white px-4 py-2 rounded mt-4"
+          >
+            Save Election Data
+          </button>
         </div>
       </main>
 

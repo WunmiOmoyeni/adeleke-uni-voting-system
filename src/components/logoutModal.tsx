@@ -14,7 +14,7 @@ const LogoutModal: React.FC<LogoutModalProps> = ({ isOpen, onConfirm, onCancel }
       <div className="bg-white p-6 rounded shadow-lg text-center">
         <h2 className="text-xl font-bold mb-4">Are you sure you want to logout?</h2>
         <div className="flex justify-center space-x-4">
-          <button onClick={onConfirm} className="bg-red-500 px-4 py-2 text-white rounded">
+          <button onClick={onConfirm} className="bg-yellow-700 px-4 py-2 text-white rounded">
             Yes
           </button>
           <button onClick={onCancel} className="bg-gray-300 px-4 py-2 rounded">
