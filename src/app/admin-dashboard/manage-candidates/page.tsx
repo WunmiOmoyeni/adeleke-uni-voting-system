@@ -1,22 +1,21 @@
 "use client";
 import { useState, useEffect, ChangeEvent } from "react";
-import { firestore, storage } from "../../../../firebaseConfig";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { firestore } from "../../../../firebaseConfig";
 import { collection, addDoc, getDocs } from "firebase/firestore";
 import AdminSidebar from "@/components/adminSidebar";
 import CandidateTable from "@/components/candidateTable";
 
-// Define positions as individual strings, not as a list that creates invalid data
+// Define positions as individual strings
 const POSITIONS = {
   EXECUTIVE_PRESIDENT: "Executive President",
-  VICE_PRESIDENT: "Vice President", 
+  VICE_PRESIDENT: "Vice President",
   GENERAL_SECRETARY: "General Secretary",
   FINANCIAL_SECRETARY: "Financial Secretary",
   TREASURER: "Treasurer",
   PRO: "Public Relations Officer",
   WELFARE_DIRECTOR: "Welfare Director",
   SPORTS_DIRECTOR: "Sports Director",
-  SOCIAL_DIRECTOR: "Social Director"
+  SOCIAL_DIRECTOR: "Social Director",
 };
 
 // Convert to array for select options
@@ -31,11 +30,8 @@ interface Candidate {
 }
 
 const ManageCandidates = () => {
-
   const [previewCandidates, setPreviewCandidates] = useState<Candidate[]>([]);
-  
   const [savedCandidates, setSavedCandidates] = useState<Candidate[]>([]);
-  
   const [name, setName] = useState("");
   const [position, setPosition] = useState(POSITIONS.EXECUTIVE_PRESIDENT);
   const [image, setImage] = useState<File | null>(null);
@@ -49,7 +45,9 @@ const ManageCandidates = () => {
     const fetchSavedCandidates = async () => {
       try {
         setLoading(true);
-        const querySnapshot = await getDocs(collection(firestore, "candidates"));
+        const querySnapshot = await getDocs(
+          collection(firestore, "candidates")
+        );
         const candidatesData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           name: doc.data().name,
@@ -81,7 +79,6 @@ const ManageCandidates = () => {
     }
   };
 
-  
   const addCandidate = () => {
     if (!name.trim() || !position) {
       setError("Name and position are required.");
@@ -128,8 +125,56 @@ const ManageCandidates = () => {
   };
 
   const removePreviewCandidate = (candidateId: string) => {
-    setPreviewCandidates(previewCandidates.filter(candidate => candidate.id !== candidateId));
+    setPreviewCandidates(
+      previewCandidates.filter((candidate) => candidate.id !== candidateId)
+    );
   };
+
+  // Helper function to upload an image to Cloudinary
+  // Modified uploadToCloudinary function
+  const uploadToCloudinary = async (file: File) => {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+    
+    console.log("Cloud name:", cloudName);
+    console.log("Upload preset:", uploadPreset);
+    
+    if (!cloudName || !uploadPreset) {
+      console.error('Missing Cloudinary configuration');
+      throw new Error('Missing Cloudinary configuration');
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+    
+    try {
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Cloudinary error details:', data);
+        throw new Error(data.error?.message || 'Failed to upload');
+      }
+      
+      return data.secure_url;
+    } catch (error) {
+      console.error('Error details:', error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    console.log("Cloudinary Cloud Name:", process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME);
+    console.log("Cloudinary Upload Preset:", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET);
+  }, []);
 
   const handleConfirmSubmission = async () => {
     if (previewCandidates.length === 0) {
@@ -149,12 +194,8 @@ const ManageCandidates = () => {
         let imageUrl = null;
 
         if (candidate.file) {
-          const storageRef = ref(
-            storage,
-            `candidates/${candidate.name.trim()}_${Date.now()}`
-          );
-          const snapshot = await uploadBytes(storageRef, candidate.file);
-          imageUrl = await getDownloadURL(snapshot.ref);
+          // Upload to Cloudinary instead of Firebase Storage
+          imageUrl = await uploadToCloudinary(candidate.file);
         }
 
         // Add to Firestore
@@ -175,7 +216,7 @@ const ManageCandidates = () => {
 
       // Update saved candidates with the new ones
       setSavedCandidates([...savedCandidates, ...newSavedCandidates]);
-      
+
       setPreviewCandidates([]);
       alert("All candidates submitted successfully!");
     } catch (error) {
@@ -195,7 +236,7 @@ const ManageCandidates = () => {
         {/* Candidate Form */}
         <div className="bg-white p-6 shadow-md rounded mb-6">
           <h2 className="text-xl font-semibold mb-4">Add New Candidate</h2>
-          
+
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
               {error}
@@ -204,7 +245,9 @@ const ManageCandidates = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Position</label>
+              <label className="block text-gray-700 font-medium mb-2">
+                Position
+              </label>
               <select
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
@@ -219,7 +262,9 @@ const ManageCandidates = () => {
             </div>
 
             <div className="mb-4">
-              <label className="block text-gray-700 font-medium mb-2">Candidate Name</label>
+              <label className="block text-gray-700 font-medium mb-2">
+                Candidate Name
+              </label>
               <input
                 type="text"
                 value={name}
@@ -231,7 +276,9 @@ const ManageCandidates = () => {
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">Candidate Image</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Candidate Image
+            </label>
             <input
               type="file"
               accept="image/*"
@@ -261,14 +308,14 @@ const ManageCandidates = () => {
         {/* Preview Candidates */}
         <div className="bg-white p-6 shadow-md rounded mb-6">
           <h2 className="text-xl font-semibold mb-4">Candidates to Submit</h2>
-          
-          <CandidateTable 
+
+          <CandidateTable
             candidates={previewCandidates}
             showActions={true}
             onRemove={removePreviewCandidate}
             emptyMessage="No candidates in preview list yet. Add candidates using the form above."
           />
-          
+
           {previewCandidates.length > 0 && (
             <div className="mt-4">
               <button
@@ -285,11 +332,11 @@ const ManageCandidates = () => {
         {/* Existing Candidates */}
         <div className="bg-white p-6 shadow-md rounded">
           <h2 className="text-xl font-semibold mb-4">Existing Candidates</h2>
-          
+
           {loading ? (
             <p className="text-gray-500">Loading candidates...</p>
           ) : (
-            <CandidateTable 
+            <CandidateTable
               candidates={savedCandidates}
               showActions={false}
               emptyMessage="No candidates saved in the database yet."
@@ -303,7 +350,10 @@ const ManageCandidates = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
             <div className="bg-white p-6 rounded shadow-lg text-center w-96">
               <h2 className="text-lg font-bold mb-4">Confirm Submission</h2>
-              <p className="mb-4">Are you sure you want to submit {previewCandidates.length} candidate(s) to the database?</p>
+              <p className="mb-4">
+                Are you sure you want to submit {previewCandidates.length}{" "}
+                candidate(s) to the database?
+              </p>
               <div className="flex justify-around">
                 <button
                   onClick={() => setShowModal(false)}
