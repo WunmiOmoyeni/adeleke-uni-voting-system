@@ -4,68 +4,74 @@ import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
   sendEmailVerification,
+  User
 } from "firebase/auth";
 import { auth, firestore } from "../../../firebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, DocumentData } from "firebase/firestore";
 import Link from "next/link";
 
+// Define types for user data
+interface UserData {
+  role: "admin" | "student" | string;
+  // Add other user fields as needed
+  name?: string;
+  email?: string;
+}
+
 const LoginPage = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null); // Success message for verification resend
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
     setSuccess(null);
-
+    setLoading(true);
+  
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      // Sign in the user
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      if (user.emailVerified) {
-        // Check if the user is in the 'admins' collection
-        let userDocRef = doc(firestore, "admins", user.uid);
-        let userDoc = await getDoc(userDocRef);
-
-        // If not found in 'admins', check the 'students' collection
-        if (!userDoc.exists()) {
-          userDocRef = doc(firestore, "students", user.uid);
-          userDoc = await getDoc(userDocRef);
-        }
-
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-
-          console.log("User data:", userData);
-
-          // Redirect based on role
-          if (userData.role === "admin") {
-            router.push("/admin-dashboard");
-          } else if (userData.role === "student") {
-            router.push("/student-dashboard");
-          } else {
-            setError("Role not defined. Please contact support.");
-          }
-        } else {
-          setError("User data not found. Please contact support.");
-        }
-      } else {
-        // If email is not verified, send a verification email and notify the user
+  
+      if (!user.emailVerified) {
         await sendEmailVerification(user);
         setSuccess("Verification email sent! Please check your inbox.");
         setError("Please verify your email before logging in.");
+        setLoading(false);
+        return;
       }
+  
+      console.log("User authenticated:", user.uid); // Debug info
+
+      //Check if user is admin
+      let userDoc = await getDoc(doc(firestore, "admins", user.uid));
+
+      if (userDoc.exists()) {
+        //User is an admin
+        router.push("/admin-dashboard");
+        return;
+      }
+
+      //Check if user is student
+      userDoc = await getDoc(doc(firestore, "students", user.uid));
+      if (userDoc.exists()) {
+        //User is a student
+        router.push("/student-dashboard");
+        return;
+      }
+
+      //No user data found
+      console.error("No user data found for UID:", user.uid);
+      setError("User data not found. Please contact support")
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "An unknown error occurred"
-      );
+      console.error("Login error:", error);
+      setError(error instanceof Error ? error.message : "An unknown error occurred");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,32 +82,34 @@ const LoginPage = () => {
 
         <form onSubmit={handleLogin}>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email:
             </label>
             <input
               type="email"
               id="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
               placeholder="Enter your email address"
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
               required
+              disabled={loading}
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Password:
             </label>
             <input
               type="password"
               id="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
               placeholder="Enter your password"
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
               required
+              disabled={loading}
             />
           </div>
 
@@ -113,16 +121,17 @@ const LoginPage = () => {
           )}
 
           <div className="flex justify-end mb-4">
-            <button type="button" className="text-blue-400 underline">
+            <Link href="/reset-password" className="text-blue-400 underline">
               Forgot password?
-            </button>
+            </Link>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white font-bold py-2 rounded hover:bg-blue-600 transition duration-200"
+            className={`w-full ${loading ? 'bg-blue-300' : 'bg-blue-500 hover:bg-blue-600'} text-white font-bold py-2 rounded transition duration-200`}
+            disabled={loading}
           >
-            Sign in
+            {loading ? "Signing in..." : "Sign in"}
           </button>
 
           <div className="mt-5 text-center">
