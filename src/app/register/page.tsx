@@ -2,12 +2,20 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { firestore } from "../../../firebaseConfig"; 
+import {
+  doc,
+  setDoc,
+  query,
+  where,
+  getDocs,
+  collection,
+} from "firebase/firestore";
+import { firestore } from "../../../firebaseConfig";
 import { auth } from "../../../firebaseConfig";
 import Swal from "sweetalert2";
 
 const RegisterPage = () => {
+  // State variables
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -18,27 +26,51 @@ const RegisterPage = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const togglePasswordVisibility = () => setShowPassword(!showPassword);
-  const toggleConfirmPasswordVisibility = () =>
-    setShowConfirmPassword(!showConfirmPassword);
   const router = useRouter();
 
+  // Validation functions
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePassword = (password: string) => {
+    // Password must be at least 8 characters, contain uppercase, lowercase, number, and special character
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return passwordRegex.test(password);
+  };
+
+  const validateMatricNumber = (matricNum: string) => {
+    return /^\d{2}\/\d{4}$/.test(matricNum);
+  };
+
+  // Check if matric number already exists
+  const checkMatricNumberExists = async (matricNum: string) => {
+    const studentsRef = collection(firestore, "students");
+    const q = query(studentsRef, where("matricNumber", "==", matricNum));
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+  };
+
+  // Toggle password visibility
+  const togglePasswordVisibility = (type: "password" | "confirmPassword") => {
+    if (type === "password") {
+      setShowPassword(!showPassword);
+    } else {
+      setShowConfirmPassword(!showConfirmPassword);
+    }
+  };
+
+  // Handle registration submission
   const handleRegister = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
-    setMessage(null);
     setLoading(true);
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      setLoading(false);
-      return;
-    }
 
     try {
       const userCredential = await createUserWithEmailAndPassword(
@@ -48,11 +80,11 @@ const RegisterPage = () => {
       );
       const user = userCredential.user;
 
-      //Save student data in firestore
+
       await setDoc(doc(firestore, "students", user.uid), {
-        firstName,
-        lastName,
-        email,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.toLowerCase(),
         matricNumber,
         faculty,
         department,
@@ -61,17 +93,7 @@ const RegisterPage = () => {
         createdAt: new Date().toISOString(),
       });
 
-      //Clear form fields
-      setFirstName("");
-      setLastName("");
-      setMatricNumber("");
-      setEmail("");
-      setFaculty("");
-      setDepartment("");
-      setLevel("");
-      setPassword("");
-      setConfirmPassword("");
-
+      resetForm();
       Swal.fire({
         title: "Registration Successful!",
         text: "You will be redirected to the login page.",
@@ -81,16 +103,44 @@ const RegisterPage = () => {
       }).then(() => {
         router.push("/login");
       });
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError("An unknown error occured");
-      }
+    } catch (error: any) {
+      console.error("Full Authentication Error:", {
+        code: error.code,
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+      });
+
+      // Detailed error mapping
+      const errorMessages: Record<string, string> = {
+        "auth/email-already-in-use": "Email is already registered",
+        "auth/invalid-email": "Invalid email format",
+        "auth/operation-not-allowed": "Email/password sign-up is disabled",
+        "auth/weak-password": "Password is too weak",
+        "auth/invalid-api-key": "Invalid Firebase API key",
+        "auth/unauthorized-domain": "Unauthorized domain for this project",
+      };
+
+      const errorMessage =
+        errorMessages[error.code] || error.message || "Registration failed";
+      setError(errorMessage);
       setLoading(false);
     }
   };
+  // Reset form to initial state
+  const resetForm = () => {
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setMatricNumber("");
+    setFaculty("");
+    setDepartment("");
+    setLevel("");
+    setPassword("");
+    setConfirmPassword("");
+  };
 
+  // Faculties and departments (unchanged from previous code)
   const faculties: Record<string, string[]> = {
     "Faculty of Science": [
       "Computer Science",
@@ -147,6 +197,8 @@ const RegisterPage = () => {
 
         <div className="max-h-[400px] overflow-y-auto px-2">
           <form onSubmit={handleRegister}>
+            {/* Form fields (similar to previous code, with minor adjustments) */}
+            {/* First Name and Last Name */}
             <div className="flex space-x-4">
               <div className="w-1/2">
                 <label
@@ -183,6 +235,7 @@ const RegisterPage = () => {
               </div>
             </div>
 
+            {/* Email Input */}
             <div className="mb-4">
               <label className="block text-sm font-[OpenSans-Medium] text-gray-700 mb-1">
                 Email:
@@ -198,6 +251,7 @@ const RegisterPage = () => {
               />
             </div>
 
+            {/* Matric Number Input */}
             <div className="mb-4">
               <label className="block text-sm font-[OpenSans-Medium] text-gray-700 mb-1">
                 Matric Number:
@@ -207,16 +261,9 @@ const RegisterPage = () => {
                 value={matricNumber}
                 onChange={(e) => {
                   const value = e.target.value;
-
-                  // Allow partial input (numbers and "/"), but enforce correct format on blur
+                  // Allow partial input (numbers and "/"), but enforce correct format
                   if (/^\d{0,2}\/?\d{0,4}$/.test(value)) {
                     setMatricNumber(value);
-                    setError(null); // Clear error while typing
-                  }
-                }}
-                onBlur={() => {
-                  if (!/^\d{2}\/\d{4}$/.test(matricNumber)) {
-                    setError("Matric number must be in 'YY/NNNN' format");
                   }
                 }}
                 placeholder="e.g., 21/0166"
@@ -225,6 +272,7 @@ const RegisterPage = () => {
               />
             </div>
 
+            {/* Faculty Dropdown */}
             <div className="mb-4">
               <label className="block text-sm font-[OpenSans-Medium] text-gray-700 mb-1">
                 Faculty:
@@ -247,7 +295,7 @@ const RegisterPage = () => {
               </select>
             </div>
 
-            {/* Department Dropdown (Updates Based on Faculty) */}
+            {/* Department Dropdown */}
             <div className="mb-4">
               <label className="block text-sm font-[OpenSans-Medium] text-gray-700 mb-1">
                 Department:
@@ -256,7 +304,8 @@ const RegisterPage = () => {
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
                 className="w-full p-2 border rounded"
-                disabled={!faculty} // Disable if no faculty is selected
+                disabled={!faculty}
+                required
               >
                 <option value="">Select Department</option>
                 {faculty &&
@@ -277,6 +326,7 @@ const RegisterPage = () => {
                 value={level}
                 onChange={(e) => setLevel(e.target.value)}
                 className="w-full p-2 border rounded"
+                required
               >
                 <option value="">Select Level</option>
                 {levels.map((lvl) => (
@@ -287,7 +337,7 @@ const RegisterPage = () => {
               </select>
             </div>
 
-            {/* <div className="flex space-x-4"> */}
+            {/* Password Inputs */}
             <div className="mb-4 relative">
               <label
                 htmlFor="password"
@@ -306,43 +356,48 @@ const RegisterPage = () => {
                 />
                 <button
                   type="button"
-                  onClick={togglePasswordVisibility}
+                  onClick={() => togglePasswordVisibility("password")}
                   className="absolute right-3 top-5 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
-                  {" "}
                   {showPassword ? "🙈" : "👁️"}
                 </button>
               </div>
+            </div>
 
-              <div className="mb-4 relative">
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-sm font-[OpenSans-Medium] text-gray-700 mb-1"
+            <div className="mb-4 relative">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-[OpenSans-Medium] text-gray-700 mb-1"
+              >
+                Confirm Password:
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => togglePasswordVisibility("confirmPassword")}
+                  className="absolute right-3 top-5 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
-                  Confirm Password:
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    id="confirmPassword"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={toggleConfirmPasswordVisibility}
-                    className="absolute right-3 top-5 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showConfirmPassword ? "🙈" : "👁️"}
-                  </button>
-                </div>
+                  {showConfirmPassword ? "🙈" : "👁️"}
+                </button>
               </div>
             </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            {message && <p className="text-green-500 text-sm">{message}</p>}
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                {error}
+              </div>
+            )}
+
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
