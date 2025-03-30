@@ -13,6 +13,9 @@ import {
 import { firestore } from "../../../firebaseConfig";
 import { auth } from "../../../firebaseConfig";
 import Swal from "sweetalert2";
+import auLogo from "../../images/au.png";
+import Image from "next/image";
+import { Eye, EyeOff } from "lucide-react";
 
 const RegisterPage = () => {
   // State variables
@@ -79,7 +82,6 @@ const RegisterPage = () => {
         password
       );
       const user = userCredential.user;
-
 
       await setDoc(doc(firestore, "students", user.uid), {
         firstName: firstName.trim(),
@@ -190,7 +192,8 @@ const RegisterPage = () => {
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">
-      <div className="w-full max-w-sm bg-white p-6 rounded-lg shadow-lg border">
+      <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-lg border">
+        <Image src={auLogo} alt="logo" className="mx-auto mb-4" />
         <h1 className="text-2xl font-[OpenSans-Bold] text-center mb-6">
           Register
         </h1>
@@ -357,9 +360,9 @@ const RegisterPage = () => {
                 <button
                   type="button"
                   onClick={() => togglePasswordVisibility("password")}
-                  className="absolute right-3 top-5 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
-                  {showPassword ? "🙈" : "👁️"}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
@@ -383,9 +386,13 @@ const RegisterPage = () => {
                 <button
                   type="button"
                   onClick={() => togglePasswordVisibility("confirmPassword")}
-                  className="absolute right-3 top-5 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
-                  {showConfirmPassword ? "🙈" : "👁️"}
+                  {showConfirmPassword ? (
+                    <EyeOff size={20} />
+                  ) : (
+                    <Eye size={20} />
+                  )}
                 </button>
               </div>
             </div>
@@ -404,7 +411,7 @@ const RegisterPage = () => {
               className={`w-full font-bold py-2 rounded transition duration-200 mt-4 ${
                 loading
                   ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-500 text-white hover:bg-blue-600"
+                  : "bg-yellow-500 text-white hover:bg-yellow-600"
               }`}
             >
               {loading ? "Registering..." : "Sign Up"}

@@ -4,8 +4,20 @@ import { firestore } from "../../../../firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 import AdminSidebar from "@/components/adminSidebar";
 
+// Define a Student interface
+interface Student {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  matricNumber: string;
+  faculty: string;
+  department: string;
+  level: string;
+}
+
 const RegisteredVoters = () => {
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -13,10 +25,10 @@ const RegisteredVoters = () => {
       try {
         const studentsCollection = collection(firestore, "students");
         const snapshot = await getDocs(studentsCollection);
-        const studentsData = snapshot.docs.map((doc) => ({
+        const studentsData: Student[] = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
-        }));
+        })) as Student[]; // Type assertion
         setStudents(studentsData);
       } catch (error) {
         console.error("Error fetching students:", error);
@@ -61,7 +73,9 @@ const RegisteredVoters = () => {
               )
               .map((student) => (
                 <tr key={student.id} className="border">
-                  <td className="border p-2">{student?.firstName} {student?.lastName}</td>
+                  <td className="border p-2">
+                    {student.firstName} {student.lastName}
+                  </td>
                   <td className="border p-2">{student.email}</td>
                   <td className="border p-2">{student.matricNumber}</td>
                   <td className="border p-2">{student.faculty}</td>
