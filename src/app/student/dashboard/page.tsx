@@ -3,37 +3,38 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth, firestore } from "../../../../firebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
 import LogoutModal from "@/components/logoutModal";
 import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
 import auLogo from "../../../images/au.png";
 import Image from "next/image";
-import StudentSidebar from "@/components/studentSidebar";
 
+interface Student {
+  firstName: string;
+  lastName: string;
+  email: string;
+  matricNumber: string;
+  faculty: string;
+  department: string;
+  level: string;
+}
+
+interface Election {
+  status: string;
+  startDate: string;
+  endDate: string;
+  title: string;
+  description: string;
+  instructions: string;
+  resultsVisibility: string;
+  candidateDeadline: string;
+  lastUpdated: Timestamp;
+}
 const StudentDashboard = () => {
-  const [student, setStudent] = useState<{
-    firstName: string;
-    lastName: string;
-    email: string;
-    matricNumber: string;
-    faculty: string;
-    department: string;
-    level: string;
-  } | null>(null);
-
+  const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
-  const [election, setElection] = useState<{
-    status: string;
-    startDate: string;
-    endDate: string;
-    title: string;
-    description: string;
-    instructions: string;
-    resultsVisibility: string;
-    candidateDeadline: string;
-    lastUpdated: any;
-  } | null>(null);
+  const [election, setElection] = useState<Election | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const router = useRouter();
 
@@ -53,7 +54,7 @@ const StudentDashboard = () => {
           const studentSnap = await getDoc(studentRef);
 
           if (studentSnap.exists()) {
-            setStudent(studentSnap.data() as any);
+            setStudent(studentSnap.data() as Student);
           } else {
             console.warn("No student data found for user:", user.uid);
           }
@@ -70,7 +71,7 @@ const StudentDashboard = () => {
 
     // Cleanup subscription
     return () => unsubscribe();
-  }, [auth, firestore, router]);
+  }, [router]);
 
   const handleLogout = async () => {
     try {
@@ -87,7 +88,7 @@ const StudentDashboard = () => {
       const electionSnap = await getDoc(electionRef);
 
       if (electionSnap.exists()) {
-        setElection(electionSnap.data() as any);
+        setElection(electionSnap.data() as Election);
       } else {
         console.error("No election data found!");
       }
@@ -108,22 +109,6 @@ const StudentDashboard = () => {
       default:
         return "bg-blue-500";
     }
-  };
-
-  // Calculate election progress
-  const calculateProgress = () => {
-    if (!election) return 0;
-
-    const now = new Date();
-    const start = new Date(election.startDate);
-    const end = new Date(election.endDate);
-
-    if (now < start) return 0;
-    if (now > end) return 100;
-
-    const total = end.getTime() - start.getTime();
-    const current = now.getTime() - start.getTime();
-    return Math.round((current / total) * 100);
   };
 
   // Format date to be more readable
@@ -292,17 +277,19 @@ const StudentDashboard = () => {
                     )}
 
                     <div className="mt-6 flex space-x-2">
-                      <button
-                        className={`${
-                          election.status.toLowerCase() === "active"
-                            ? "bg-blue-800 hover:bg-blue-900"
-                            : "bg-gray-400 cursor-not-allowed"
-                        } text-white px-4 py-2 rounded flex-1 text-center transition-all`}
-                        disabled={election.status.toLowerCase() !== "active"}
-                      >
-                        Cast Your Vote
-                      </button>
-                      <Link href="/student/candidates" className="flex-1">
+                      <Link href="/student/vote">
+                        <button
+                          className={`${
+                            election.status.toLowerCase() === "active"
+                              ? "bg-blue-800 hover:bg-blue-900"
+                              : "bg-gray-400 cursor-not-allowed"
+                          } text-white px-4 py-2 rounded flex-1 text-center transition-all`}
+                          disabled={election.status.toLowerCase() !== "active"}
+                        >
+                          Cast Your Vote
+                        </button>
+                      </Link>
+                      <Link href="/student/candidates" >
                         <button className="border border-yellow-500 bg-yellow-500 text-white hover:bg-yellow-600 px-4 py-2 rounded w-full text-center transition-all">
                           View Candidates
                         </button>
