@@ -21,14 +21,6 @@ interface Candidate {
   imageUrl: string;
 }
 
-interface Vote {
-  studentId: string;
-  positionSelections: {
-    [position: string]: string; // position: candidateId
-  };
-  timestamp: Date;
-}
-
 const VotingPage = () => {
   const router = useRouter();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -258,8 +250,9 @@ const VotingPage = () => {
             <li>You must vote for all positions before submitting</li>
             <li>Your vote is final and cannot be changed after submission</li>
             <li>
-              You can click on "View Profile" to learn more about a candidate
-              before voting
+              {
+                'You can click on "View Profile" to learn more about a candidate before voting'
+              }
             </li>
           </ul>
         </div>

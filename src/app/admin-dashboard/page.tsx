@@ -11,7 +11,6 @@ import {
   getDocs,
   query,
   where,
-  count,
 } from "firebase/firestore";
 import LogoutModal from "@/components/logoutModal";
 import AdminSidebar from "@/components/adminSidebar";

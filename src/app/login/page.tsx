@@ -12,14 +12,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
 
-// Define types for user data
-interface UserData {
-  role: "admin" | "student" | string;
-  // Add other user fields as needed
-  name?: string;
-  email?: string;
-}
-
 const LoginPage = () => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -34,26 +26,26 @@ const LoginPage = () => {
     setError(null);
     setSuccess(null);
     setLoading(true);
-    
+
     try {
       let userEmail = email;
-      
+
       // If input is NOT an email (no @), treat it as matric number or staff ID
       if (!email.includes("@")) {
         // Transform the matric number for lookup (replacing '/' with '_')
         const lookupId = email.replace("/", "-");
-        
+
         // Try finding student by matric number
         const studentsRef = doc(firestore, "matric_lookup", lookupId);
         const studentDoc = await getDoc(studentsRef);
-        
+
         if (studentDoc.exists()) {
           userEmail = studentDoc.data().email;
         } else {
           // Try finding admin by staff ID
           const adminsRef = doc(firestore, "staff_lookup", lookupId);
           const adminDoc = await getDoc(adminsRef);
-          
+
           if (adminDoc.exists()) {
             userEmail = adminDoc.data().email;
           } else {
@@ -61,7 +53,7 @@ const LoginPage = () => {
           }
         }
       }
-      
+
       // Sign in using the resolved email
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -94,17 +86,33 @@ const LoginPage = () => {
 
       // No user data found
       setError("User data not found. Please contact support");
-    } catch (error: any) {
-      if (error.code === "auth/invalid-credential") {
-        setError(
-          "These credentials do not match our records or your account isn't active."
-        );
-      } else if (error.code === "auth/user-not-found") {
-        setError("No account found with this email, matric number or staff ID.");
-      } else if (error.code === "auth/wrong-password") {
-        setError("Incorrect password. Please try again.");
+    } catch (error: unknown) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        typeof error.code === "string"
+      ) {
+        switch (error.code) {
+          case "auth/invalid-credential":
+            setError(
+              "These credentials do not match our records or your account isn't active."
+            );
+            break;
+          case "auth/user-not-found":
+            setError(
+              "No account found with this email, matric number or staff ID."
+            );
+            break;
+          case "auth/wrong-password":
+            setError("Incorrect password. Please try again.");
+            break;
+          default:
+            setError("An unknown error occurred. Please try again later.");
+        }
       } else {
-        setError("An unknown error occurred. Please try again later.");
+        setError("An unexpected error occurred. Please try again later.");
+        console.error("Unexpected error:", error);
       }
     } finally {
       setLoading(false);

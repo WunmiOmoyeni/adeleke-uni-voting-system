@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { firestore } from '../../../../../firebaseConfig';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Candidate {
   id: string;
@@ -70,7 +71,7 @@ const CandidateProfile = () => {
         <div className="bg-white rounded-lg shadow-md p-6 flex flex-col md:flex-row items-center">
           <div className="w-40 h-40 md:w-60 md:h-60 bg-gray-200 rounded-full overflow-hidden mb-4 md:mb-0">
             {candidate?.imageUrl ? (
-              <img src={candidate.imageUrl} alt={candidate.name} className="w-full h-full object-cover" />
+              <Image src={candidate.imageUrl} alt={candidate.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-5xl">👤</div>
             )}

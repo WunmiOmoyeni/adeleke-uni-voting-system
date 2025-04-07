@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth, firestore } from "../../../../firebaseConfig";
-import { doc, getDoc, Timestamp, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, Timestamp} from "firebase/firestore";
 import LogoutModal from "@/components/logoutModal";
 import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
@@ -36,7 +36,6 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [election, setElection] = useState<Election | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [hasVoted, setHasVoted] = useState(false);
   const router = useRouter();
 
   // Get time of day for personalized greeting
@@ -97,12 +96,6 @@ const StudentDashboard = () => {
 
     fetchElectionData();
   }, []);
-
-  useEffect(() => {
-    const checkVotingStatus = async() => {
-      
-    }
-  })
 
   // Helper function to get status color
   const getStatusColor = (status: string) => {

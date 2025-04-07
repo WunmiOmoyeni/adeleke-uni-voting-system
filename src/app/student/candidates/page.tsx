@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { firestore } from "../../../../firebaseConfig";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Candidate {
   id: string;
@@ -162,7 +163,7 @@ const ViewCandidates = () => {
                         >
                           <div className="relative h-48 overflow-hidden bg-blue-100">
                             {candidate.imageUrl ? (
-                              <img
+                              <Image
                                 src={candidate.imageUrl}
                                 alt={candidate.name}
                                 className="w-full h-full object-cover"

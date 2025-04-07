@@ -4,6 +4,7 @@ import { firestore } from "../../../../firebaseConfig";
 import { collection, addDoc, getDocs } from "firebase/firestore";
 import AdminSidebar from "@/components/adminSidebar";
 import CandidateTable from "@/components/candidateTable";
+import Image from "next/image";
 
 // Define positions as individual strings
 const POSITIONS = {
@@ -287,7 +288,7 @@ const ManageCandidates = () => {
             />
             {imagePreview && (
               <div className="mt-2">
-                <img
+                <Image
                   src={imagePreview}
                   alt="Preview"
                   className="w-32 h-32 object-cover rounded border"

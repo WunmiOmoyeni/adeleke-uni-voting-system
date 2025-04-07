@@ -34,20 +34,7 @@ const RegisterPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const router = useRouter();
-
-  // Validation functions
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const validatePassword = (password: string) => {
-    // Password must be at least 8 characters, contain uppercase, lowercase, number, and special character
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    return passwordRegex.test(password);
-  };
-
+  
   const validateMatricNumber = (matricNum: string) => {
     return /^\d{2}\/\d{4}$/.test(matricNum);
   };
@@ -113,10 +100,13 @@ const RegisterPage = () => {
       });
 
       // Create entry in matric_lookup collection
-      await setDoc(doc(firestore, "matric_lookup", matricNumber.replace("/", "-")), {
-        email: email.toLowerCase(),
-        uid: user.uid
-      });
+      await setDoc(
+        doc(firestore, "matric_lookup", matricNumber.replace("/", "-")),
+        {
+          email: email.toLowerCase(),
+          uid: user.uid,
+        }
+      );
 
       resetForm();
       Swal.fire({
@@ -128,29 +118,43 @@ const RegisterPage = () => {
       }).then(() => {
         router.push("/login");
       });
-    } catch (error: any) {
-      console.error("Full Authentication Error:", {
-        code: error.code,
-        message: error.message,
-        name: error.name,
-        stack: error.stack,
-      });
+    } catch (error: unknown) {
+      let code = "";
+      let message = "Registration failed";
 
-      // Detailed error mapping
-      const errorMessages: Record<string, string> = {
-        "auth/email-already-in-use": "Email is already registered",
-        "auth/invalid-email": "Invalid email format",
-        "auth/operation-not-allowed": "Email/password sign-up is disabled",
-        "auth/weak-password": "Password is too weak",
-        "auth/invalid-api-key": "Invalid Firebase API key",
-        "auth/unauthorized-domain": "Unauthorized domain for this project",
-        "permission-denied":
-          "You don't have permission to register this student",
-      };
+      if (typeof error === "object" && error !== null) {
+        const err = error as {
+          code?: string;
+          message?: string;
+          name?: string;
+          stack?: string;
+        };
 
-      const errorMessage =
-        errorMessages[error.code] || error.message || "Registration failed";
-      setError(errorMessage);
+        console.error("Full Authentication Error:", {
+          code: err.code,
+          message: err.message,
+          name: err.name,
+          stack: err.stack,
+        });
+
+        const errorMessages: Record<string, string> = {
+          "auth/email-already-in-use": "Email is already registered",
+          "auth/invalid-email": "Invalid email format",
+          "auth/operation-not-allowed": "Email/password sign-up is disabled",
+          "auth/weak-password": "Password is too weak",
+          "auth/invalid-api-key": "Invalid Firebase API key",
+          "auth/unauthorized-domain": "Unauthorized domain for this project",
+          "permission-denied":
+            "You don't have permission to register this student",
+        };
+
+        code = err.code || "";
+        message = errorMessages[code] || err.message || message;
+      } else {
+        console.error("Unknown error:", error);
+      }
+
+      setError(message);
       setLoading(false);
     }
   };

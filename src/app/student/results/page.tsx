@@ -33,7 +33,7 @@ const ResultsPage = () => {
   const [studentId, setStudentId] = useState<string | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [hasVoted, setHasVoted] = useState(false);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
+//   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [totalVoters, setTotalVoters] = useState(0);
   
   useEffect(() => {
@@ -94,7 +94,7 @@ const ResultsPage = () => {
           ...doc.data(),
         })) as Candidate[];
         
-        setCandidates(candidateList);
+        // setCandidates(candidateList);
         
         // Set up real-time listener for votes
         setupVoteListener(candidateList);
