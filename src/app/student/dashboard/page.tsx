@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth, firestore } from "../../../../firebaseConfig";
-import { doc, getDoc, Timestamp } from "firebase/firestore";
+import { doc, getDoc, Timestamp, collection, query, where, getDocs } from "firebase/firestore";
 import LogoutModal from "@/components/logoutModal";
 import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
@@ -36,6 +36,7 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [election, setElection] = useState<Election | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [hasVoted, setHasVoted] = useState(false);
   const router = useRouter();
 
   // Get time of day for personalized greeting
@@ -97,6 +98,12 @@ const StudentDashboard = () => {
     fetchElectionData();
   }, []);
 
+  useEffect(() => {
+    const checkVotingStatus = async() => {
+      
+    }
+  })
+
   // Helper function to get status color
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -137,32 +144,44 @@ const StudentDashboard = () => {
         ) : (
           <>
             {/* Hero Banner Section - Updated with Yellow and Royal Blue */}
-            <div className="flex items-center justify-between bg-blue-800 rounded-xl p-6 mb-6 text-white shadow-lg">
-              {/* Left Section: Logo */}
-              <Image src={auLogo} alt="logo" className="w-12 h-12" />
+            <div className="flex flex-col md:flex-row items-center justify-between bg-blue-800 rounded-xl p-4 md:p-6 mb-6 text-white shadow-lg">
+              {/* Top Section on Mobile, Left on Desktop: Logo and Profile */}
+              <div className="flex w-full md:w-auto justify-between items-center mb-4 md:mb-0">
+                <Image
+                  src={auLogo}
+                  alt="logo"
+                  className="w-10 h-10 md:w-12 md:h-12"
+                />
+
+                {/* Profile Icon - Only visible on mobile */}
+                <div className="bg-white/20 p-3 rounded-full md:hidden">
+                  <span className="text-xl">👤</span>
+                </div>
+              </div>
 
               {/* Middle Section: Greeting */}
-              <div className="flex flex-col text-center">
-                <span className="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">
+              <div className="flex flex-col text-center mb-4 md:mb-0">
+                <span className="text-xs md:text-sm font-medium bg-white/20 px-2 py-1 md:px-3 md:py-1 rounded-full">
                   {new Date().toLocaleDateString("en-US", {
                     weekday: "long",
                     month: "long",
                     day: "numeric",
                   })}
                 </span>
-                <h1 className="text-3xl font-bold mt-2">
+                <h1 className="text-xl md:text-3xl font-bold mt-2">
                   {getGreeting()}, {student?.firstName} 👋
                 </h1>
               </div>
 
-              {/* Right Section: Profile and Logout */}
-              <div className="flex items-center gap-4">
-                <div className="bg-white/20 p-4 rounded-full">
+              {/* Bottom Section on Mobile, Right on Desktop: Profile and Logout */}
+              <div className="flex items-center gap-2 md:gap-4">
+                {/* Profile Icon - Only visible on desktop */}
+                <div className="hidden md:flex bg-white/20 p-4 rounded-full">
                   <span className="text-2xl">👤</span>
                 </div>
                 <button
                   onClick={() => setShowLogoutModal(true)}
-                  className="bg-yellow-500 hover:bg-yellow-600 transition-all px-4 py-2 text-white rounded-lg"
+                  className="w-full md:w-auto bg-yellow-500 hover:bg-yellow-600 transition-all px-4 py-2 text-white rounded-lg"
                 >
                   Logout
                 </button>
@@ -276,22 +295,22 @@ const StudentDashboard = () => {
                       </div>
                     )}
 
-                    <div className="mt-6 flex space-x-2">
-                      <Link href="/student/vote">
+                    <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Link href="/student/vote" className="block">
                         <button
                           className={`${
                             election.status.toLowerCase() === "active"
                               ? "bg-blue-800 hover:bg-blue-900"
                               : "bg-gray-400 cursor-not-allowed"
-                          } text-white px-4 py-2 rounded flex-1 text-center transition-all`}
+                          } text-white px-4 py-3 rounded w-full text-center transition-all font-medium flex items-center justify-center`}
                           disabled={election.status.toLowerCase() !== "active"}
                         >
-                          Cast Your Vote
+                          <span className="mr-2">🗳️</span> Cast Your Vote
                         </button>
                       </Link>
-                      <Link href="/student/candidates" >
-                        <button className="border border-yellow-500 bg-yellow-500 text-white hover:bg-yellow-600 px-4 py-2 rounded w-full text-center transition-all">
-                          View Candidates
+                      <Link href="/student/candidates" className="block">
+                        <button className="bg-yellow-500 text-white hover:bg-yellow-600 px-4 py-3 rounded w-full text-center transition-all font-medium flex items-center justify-center">
+                          <span className="mr-2">👥</span> View Candidates
                         </button>
                       </Link>
                     </div>

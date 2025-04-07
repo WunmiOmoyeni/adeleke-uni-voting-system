@@ -76,6 +76,22 @@ const RegisterPage = () => {
     setLoading(true);
 
     try {
+      // Validate matric number format
+      if (!validateMatricNumber(matricNumber)) {
+        setError("Invalid matric number format. Please use format: 21/0166");
+        setLoading(false);
+        return;
+      }
+
+      // Check if matric number already exists
+      const matricExists = await checkMatricNumberExists(matricNumber);
+      if (matricExists) {
+        setError("This matric number is already registered");
+        setLoading(false);
+        return;
+      }
+
+      // Create user with email and password
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -83,6 +99,7 @@ const RegisterPage = () => {
       );
       const user = userCredential.user;
 
+      // Create student document
       await setDoc(doc(firestore, "students", user.uid), {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -93,6 +110,12 @@ const RegisterPage = () => {
         level,
         role: "student",
         createdAt: new Date().toISOString(),
+      });
+
+      // Create entry in matric_lookup collection
+      await setDoc(doc(firestore, "matric_lookup", matricNumber.replace("/", "-")), {
+        email: email.toLowerCase(),
+        uid: user.uid
       });
 
       resetForm();
@@ -121,6 +144,8 @@ const RegisterPage = () => {
         "auth/weak-password": "Password is too weak",
         "auth/invalid-api-key": "Invalid Firebase API key",
         "auth/unauthorized-domain": "Unauthorized domain for this project",
+        "permission-denied":
+          "You don't have permission to register this student",
       };
 
       const errorMessage =
@@ -173,6 +198,7 @@ const RegisterPage = () => {
       "Medical Laboratory Sciences",
       "Nursing",
       "Anatomy",
+      "Health and Information Management(HIM)",
     ],
 
     "Faculty of Basic Social Sciences": [

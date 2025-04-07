@@ -3,7 +3,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, firestore } from "../../../firebaseConfig";
-import { doc, getDoc, setDoc, collection, getDocs, query, where, count } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+  count,
+} from "firebase/firestore";
 import LogoutModal from "@/components/logoutModal";
 import AdminSidebar from "@/components/adminSidebar";
 
@@ -17,16 +26,18 @@ const AdminDashboard = () => {
   const [votingInstructions, setVotingInstructions] = useState("");
   const [resultsVisibility, setResultsVisibility] = useState("afterClose");
   const [candidateDeadline, setCandidateDeadline] = useState("");
-  
+
   const [totalVoters, setTotalVoters] = useState<number>(0);
   const [votesCast, setVotesCast] = useState<number>(0);
-  const [recentActivity, setRecentActivity] = useState<Array<{action: string, timestamp: Date}>>([]);
-  
+  const [recentActivity, setRecentActivity] = useState<
+    Array<{ action: string; timestamp: Date }>
+  >([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState({type: "", message: ""});
+  const [saveMessage, setSaveMessage] = useState({ type: "", message: "" });
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  
+
   const router = useRouter();
 
   // Fetch election data from Firestore
@@ -47,45 +58,45 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error("Error fetching election data:", error);
       setSaveMessage({
-        type: "error", 
-        message: "Failed to load election settings"
+        type: "error",
+        message: "Failed to load election settings",
       });
     }
   };
 
   // Fetch total voters count
+  // Enhanced vote fetching with error handling and console logging
   const fetchVoterMetrics = async () => {
     try {
       // Count total registered voters (students)
       const studentsSnapshot = await getDocs(collection(firestore, "students"));
       setTotalVoters(studentsSnapshot.size);
-      
-      // Count votes cast
+
+      // Now get only submitted votes
       const votesSnapshot = await getDocs(
         query(collection(firestore, "votes"), where("submitted", "==", true))
       );
+      console.log(`Votes with submitted=true: ${votesSnapshot.size}`);
       setVotesCast(votesSnapshot.size);
-      
     } catch (error) {
       console.error("Error fetching voter metrics:", error);
+      // Consider adding user-visible error here
     }
   };
 
   // Fetch recent activity
   const fetchRecentActivity = async () => {
     try {
-      const activitySnapshot = await getDocs(
-        collection(firestore, "activity")
-      );
-      
+      const activitySnapshot = await getDocs(collection(firestore, "activity"));
+
       const activityData = activitySnapshot.docs
-        .map(doc => ({
+        .map((doc) => ({
           action: doc.data().action,
-          timestamp: doc.data().timestamp.toDate()
+          timestamp: doc.data().timestamp.toDate(),
         }))
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
         .slice(0, 5); // Get only the 5 most recent activities
-      
+
       setRecentActivity(activityData);
     } catch (error) {
       console.error("Error fetching activity:", error);
@@ -95,18 +106,21 @@ const AdminDashboard = () => {
   const handleSaveElectionData = async () => {
     // Form validation
     if (!electionTitle.trim()) {
-      setSaveMessage({type: "error", message: "Election title is required"});
+      setSaveMessage({ type: "error", message: "Election title is required" });
       return;
     }
-    
+
     if (new Date(endDate) <= new Date(startDate)) {
-      setSaveMessage({type: "error", message: "End date must be after start date"});
+      setSaveMessage({
+        type: "error",
+        message: "End date must be after start date",
+      });
       return;
     }
-    
+
     setIsSaving(true);
-    setSaveMessage({type: "", message: ""});
-    
+    setSaveMessage({ type: "", message: "" });
+
     try {
       await setDoc(doc(firestore, "election", "status"), {
         status,
@@ -117,34 +131,34 @@ const AdminDashboard = () => {
         instructions: votingInstructions,
         resultsVisibility,
         candidateDeadline,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       });
-      
+
       // Add to activity log
       await setDoc(doc(collection(firestore, "activity")), {
         action: `Election settings updated by ${userName || "Admin"}`,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
-      
+
       setSaveMessage({
-        type: "success", 
-        message: "Election details updated successfully"
+        type: "success",
+        message: "Election details updated successfully",
       });
-      
+
       // Refresh activity data
       fetchRecentActivity();
     } catch (error) {
       console.error("Error updating election status: ", error);
       setSaveMessage({
-        type: "error", 
-        message: "Failed to update election details"
+        type: "error",
+        message: "Failed to update election details",
       });
     } finally {
       setIsSaving(false);
-      
+
       // Clear message after 3 seconds
       setTimeout(() => {
-        setSaveMessage({type: "", message: ""});
+        setSaveMessage({ type: "", message: "" });
       }, 3000);
     }
   };
@@ -161,7 +175,7 @@ const AdminDashboard = () => {
           router.push("/login");
           return;
         }
-        
+
         setIsLoading(false);
       } else {
         router.push("/login");
@@ -207,7 +221,7 @@ const AdminDashboard = () => {
     <div className="flex flex-col sm:flex-row min-h-screen bg-gray-100">
       {/* Sidebar */}
       <AdminSidebar />
-      
+
       {/* Main Content */}
       <main className="flex-1 p-6">
         {/* Header */}
@@ -225,10 +239,15 @@ const AdminDashboard = () => {
 
         {/* Save Message */}
         {saveMessage.message && (
-          <div className={`mb-4 p-3 rounded ${
-            saveMessage.type === "success" ? "bg-green-100 text-green-800" : 
-            saveMessage.type === "error" ? "bg-red-100 text-red-800" : ""
-          }`}>
+          <div
+            className={`mb-4 p-3 rounded ${
+              saveMessage.type === "success"
+                ? "bg-green-100 text-green-800"
+                : saveMessage.type === "error"
+                ? "bg-red-100 text-red-800"
+                : ""
+            }`}
+          >
             {saveMessage.message}
           </div>
         )}
@@ -249,11 +268,11 @@ const AdminDashboard = () => {
             <h3 className="text-[20px] font-[OpenSans-Bold]">Voting Status</h3>
             <p
               className={`text-2xl font-[OpenSans-Regular] mt-2 ${
-                status === "Ongoing" 
-                  ? "text-green-500" 
-                  : status === "Upcoming" 
-                    ? "text-blue-500" 
-                    : "text-red-500"
+                status === "Ongoing"
+                  ? "text-green-500"
+                  : status === "Upcoming"
+                  ? "text-blue-500"
+                  : "text-red-500"
               }`}
             >
               {status}
@@ -290,7 +309,9 @@ const AdminDashboard = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Election Title:</label>
+              <label className="block text-gray-700 font-medium mb-1">
+                Election Title:
+              </label>
               <input
                 type="text"
                 value={electionTitle}
@@ -301,7 +322,9 @@ const AdminDashboard = () => {
             </div>
 
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Status:</label>
+              <label className="block text-gray-700 font-medium mb-1">
+                Status:
+              </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
@@ -314,7 +337,9 @@ const AdminDashboard = () => {
             </div>
 
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Start Date:</label>
+              <label className="block text-gray-700 font-medium mb-1">
+                Start Date:
+              </label>
               <input
                 type="datetime-local"
                 value={startDate}
@@ -324,7 +349,9 @@ const AdminDashboard = () => {
             </div>
 
             <div>
-              <label className="block text-gray-700 font-medium mb-1">End Date:</label>
+              <label className="block text-gray-700 font-medium mb-1">
+                End Date:
+              </label>
               <input
                 type="datetime-local"
                 value={endDate}
@@ -334,7 +361,9 @@ const AdminDashboard = () => {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-gray-700 font-medium mb-1">Election Description:</label>
+              <label className="block text-gray-700 font-medium mb-1">
+                Election Description:
+              </label>
               <textarea
                 value={electionDescription}
                 onChange={(e) => setElectionDescription(e.target.value)}
@@ -344,7 +373,9 @@ const AdminDashboard = () => {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-gray-700 font-medium mb-1">Voting Instructions:</label>
+              <label className="block text-gray-700 font-medium mb-1">
+                Voting Instructions:
+              </label>
               <textarea
                 value={votingInstructions}
                 onChange={(e) => setVotingInstructions(e.target.value)}
@@ -354,7 +385,9 @@ const AdminDashboard = () => {
             </div>
 
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Results Visibility:</label>
+              <label className="block text-gray-700 font-medium mb-1">
+                Results Visibility:
+              </label>
               <select
                 value={resultsVisibility}
                 onChange={(e) => setResultsVisibility(e.target.value)}
@@ -367,7 +400,9 @@ const AdminDashboard = () => {
             </div>
 
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Candidate Registration Deadline:</label>
+              <label className="block text-gray-700 font-medium mb-1">
+                Candidate Registration Deadline:
+              </label>
               <input
                 type="datetime-local"
                 value={candidateDeadline}

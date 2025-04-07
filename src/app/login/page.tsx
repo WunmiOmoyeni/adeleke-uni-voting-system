@@ -4,11 +4,10 @@ import { useRouter } from "next/navigation";
 import {
   signInWithEmailAndPassword,
   sendEmailVerification,
-  User,
 } from "firebase/auth";
 import auLogo from "../../images/au.png";
 import { auth, firestore } from "../../../firebaseConfig";
-import { doc, getDoc, DocumentData } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import Link from "next/link";
 import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
@@ -35,12 +34,38 @@ const LoginPage = () => {
     setError(null);
     setSuccess(null);
     setLoading(true);
-
+    
     try {
-      // Sign in the user
+      let userEmail = email;
+      
+      // If input is NOT an email (no @), treat it as matric number or staff ID
+      if (!email.includes("@")) {
+        // Transform the matric number for lookup (replacing '/' with '_')
+        const lookupId = email.replace("/", "-");
+        
+        // Try finding student by matric number
+        const studentsRef = doc(firestore, "matric_lookup", lookupId);
+        const studentDoc = await getDoc(studentsRef);
+        
+        if (studentDoc.exists()) {
+          userEmail = studentDoc.data().email;
+        } else {
+          // Try finding admin by staff ID
+          const adminsRef = doc(firestore, "staff_lookup", lookupId);
+          const adminDoc = await getDoc(adminsRef);
+          
+          if (adminDoc.exists()) {
+            userEmail = adminDoc.data().email;
+          } else {
+            throw { code: "auth/user-not-found" };
+          }
+        }
+      }
+      
+      // Sign in using the resolved email
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        email,
+        userEmail,
         password
       );
       const user = userCredential.user;
@@ -52,26 +77,22 @@ const LoginPage = () => {
         setLoading(false);
         return;
       }
-      // Debug info
 
-      //Check if user is admin
+      // Check if user is admin
       let userDoc = await getDoc(doc(firestore, "admins", user.uid));
-
       if (userDoc.exists()) {
-        //User is an admin
         router.push("/admin-dashboard");
         return;
       }
 
-      //Check if user is student
+      // Check if user is student
       userDoc = await getDoc(doc(firestore, "students", user.uid));
       if (userDoc.exists()) {
-        //User is a student
         router.push("/student/dashboard");
         return;
       }
 
-      //No user data found
+      // No user data found
       setError("User data not found. Please contact support");
     } catch (error: any) {
       if (error.code === "auth/invalid-credential") {
@@ -79,7 +100,7 @@ const LoginPage = () => {
           "These credentials do not match our records or your account isn't active."
         );
       } else if (error.code === "auth/user-not-found") {
-        setError("No account found with this email.");
+        setError("No account found with this email, matric number or staff ID.");
       } else if (error.code === "auth/wrong-password") {
         setError("Incorrect password. Please try again.");
       } else {
@@ -90,10 +111,8 @@ const LoginPage = () => {
     }
   };
 
-  const togglePasswordVisibility = (type: "password" | "confirmPassword") => {
-    if (type === "password") {
-      setShowPassword(!showPassword);
-    }
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -108,16 +127,16 @@ const LoginPage = () => {
               htmlFor="email"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Email:
+              Email or Matric Number:
             </label>
             <input
-              type="email"
+              type="text"
               id="email"
               value={email}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setEmail(e.target.value)
               }
-              placeholder="Enter your email address"
+              placeholder="Enter your email or matric number"
               className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
               required
               disabled={loading}
@@ -146,7 +165,7 @@ const LoginPage = () => {
               />
               <button
                 type="button"
-                onClick={() => togglePasswordVisibility("password")}
+                onClick={togglePasswordVisibility}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
