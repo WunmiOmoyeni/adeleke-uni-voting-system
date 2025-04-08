@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../../firebaseConfig"; // update the path if different
-import { useRouter } from "next/navigation";
+import { FirebaseError } from "firebase/app";
+// import { useRouter } from "next/navigation";
 
 const ResetPasswordPage = () => {
   const [email, setEmail] = useState("");
@@ -21,21 +22,17 @@ const ResetPasswordPage = () => {
       await sendPasswordResetEmail(auth, email);
       setMessage("Password reset email sent! Check your inbox.");
     } catch (err: unknown) {
-        if (
-          typeof err === "object" &&
-          err !== null &&
-          "code" in err &&
-          typeof (err as any).code === "string"
-        ) {
-          const errorCode = (err as any).code;
-      
-          if (errorCode === "auth/user-not-found") {
-            setError("No user found with this email.");
-          } else if (errorCode === "auth/invalid-email") {
-            setError("Invalid email format.");
-          } else {
-            setError("Something went wrong. Please try again.");
-            console.error(err);
+        if (err instanceof FirebaseError) {
+          switch (err.code) {
+            case "auth/user-not-found":
+              setError("No user found with this email.");
+              break;
+            case "auth/invalid-email":
+              setError("Invalid email format.");
+              break;
+            default:
+              setError("Something went wrong. Please try again.");
+              console.error("Firebase error:", err);
           }
         } else {
           setError("An unexpected error occurred. Please try again later.");
