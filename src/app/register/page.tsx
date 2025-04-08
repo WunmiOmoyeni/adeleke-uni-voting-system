@@ -34,7 +34,7 @@ const RegisterPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const router = useRouter();
-  
+
   const validateMatricNumber = (matricNum: string) => {
     return /^\d{2}\/\d{4}$/.test(matricNum);
   };
@@ -446,6 +446,20 @@ const RegisterPage = () => {
             >
               {loading ? "Registering..." : "Sign Up"}
             </button>
+
+            {/* Login redirect */}
+            <div className="mt-4 text-center">
+              <p className="text-sm text-gray-600">
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => router.push("/login")}
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Login here
+                </button>
+              </p>
+            </div>
           </form>
         </div>
       </div>

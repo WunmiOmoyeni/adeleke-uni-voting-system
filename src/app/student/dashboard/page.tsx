@@ -1,14 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
 import { auth, firestore } from "../../../../firebaseConfig";
-import { doc, getDoc, Timestamp} from "firebase/firestore";
+import { doc, getDoc, Timestamp, collection, query, where, getDocs } from "firebase/firestore";
 import LogoutModal from "@/components/logoutModal";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import Link from "next/link";
 import auLogo from "../../../images/au.png";
 import Image from "next/image";
+import { unsubscribe } from "diagnostics_channel";
 
 interface Student {
   firstName: string;
@@ -36,7 +36,14 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [election, setElection] = useState<Election | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [hasVoted, setHasVoted] = useState(false);
+  const [studentId, setStudentId] = useState<string | null>(null);
+  const [listeners, setListeners] =  useState<(() => void)[]>([]);
   const router = useRouter();
+  
+  const addListener = (unsubscribeFunc: () => void) => {
+    setListeners(prev => [...prev, unsubscribeFunc]);
+  };
 
   // Get time of day for personalized greeting
   const getGreeting = () => {
@@ -55,6 +62,7 @@ const StudentDashboard = () => {
 
           if (studentSnap.exists()) {
             setStudent(studentSnap.data() as Student);
+            setStudentId(user.uid);
           } else {
             console.warn("No student data found for user:", user.uid);
           }
@@ -69,11 +77,40 @@ const StudentDashboard = () => {
       }
     });
 
+    addListener(unsubscribe);
+
     // Cleanup subscription
     return () => unsubscribe();
   }, [router]);
 
+  // Check if student has voted
+  useEffect(() => {
+    const checkVotingStatus = async () => {
+      if (!studentId) return;
+      
+      try {
+        const votesQuery = query(
+          collection(firestore, "votes"),
+          where("studentId", "==", studentId),
+          where("submitted", "==", true)
+        );
+        
+        const votesSnapshot = await getDocs(votesQuery);
+        setHasVoted(!votesSnapshot.empty);
+      } catch (error) {
+        console.error("Error checking voting status:", error);
+      }
+    };
+    
+    checkVotingStatus();
+  }, [studentId]);
+
   const handleLogout = async () => {
+    setShowLogoutModal(false);
+
+    listeners.forEach(unsubscribe => unsubscribe());
+    setListeners([]);
+    
     try {
       await signOut(auth);
       router.push("/login");
@@ -292,20 +329,31 @@ const StudentDashboard = () => {
                       <Link href="/student/vote" className="block">
                         <button
                           className={`${
-                            election.status.toLowerCase() === "active"
+                            election.status.toLowerCase() === "active" && !hasVoted
                               ? "bg-blue-800 hover:bg-blue-900"
                               : "bg-gray-400 cursor-not-allowed"
                           } text-white px-4 py-3 rounded w-full text-center transition-all font-medium flex items-center justify-center`}
-                          disabled={election.status.toLowerCase() !== "active"}
+                          disabled={election.status.toLowerCase() !== "active" || hasVoted}
                         >
-                          <span className="mr-2">🗳️</span> Cast Your Vote
+                          <span className="mr-2">🗳️</span> 
+                          {hasVoted ? "Already Voted" : "Cast Your Vote"}
                         </button>
                       </Link>
-                      <Link href="/student/candidates" className="block">
-                        <button className="bg-yellow-500 text-white hover:bg-yellow-600 px-4 py-3 rounded w-full text-center transition-all font-medium flex items-center justify-center">
-                          <span className="mr-2">👥</span> View Candidates
-                        </button>
-                      </Link>
+                      
+                      {/* Conditionally show View Results or View Candidates button */}
+                      {hasVoted ? (
+                        <Link href="/student/results" className="block">
+                          <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded w-full text-center transition-all font-medium flex items-center justify-center">
+                            <span className="mr-2">📊</span> View Results
+                          </button>
+                        </Link>
+                      ) : (
+                        <Link href="/student/candidates" className="block">
+                          <button className="bg-yellow-500 text-white hover:bg-yellow-600 px-4 py-3 rounded w-full text-center transition-all font-medium flex items-center justify-center">
+                            <span className="mr-2">👥</span> View Candidates
+                          </button>
+                        </Link>
+                      )}
                     </div>
 
                     <p className="text-xs text-gray-400 mt-4 text-right">

@@ -307,7 +307,7 @@ const VotingPage = () => {
 
                       <div className="flex flex-col sm:flex-row gap-2 mt-3">
                         <Link
-                          href={`/candidates/${candidate.id}`}
+                          href={`/student/candidates/${candidate.id}?from=voting`}
                           className="flex-1"
                         >
                           <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition-all">

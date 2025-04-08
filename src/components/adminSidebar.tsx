@@ -12,8 +12,6 @@ const AdminSidebar = () => {
     { href: "/admin-dashboard", label: "🏠 Dashboard" },
     { href: "/admin-dashboard/manage-candidates", label: "👤 Manage Candidates" },
     { href: "/admin-dashboard/registered-voters", label: "🗳️ Registered Voters" },
-    { href: "/admin-dashboard/view-results", label: "📊 View Results" },
-    { href: "/admin-dashboard/settings", label: "⚙️ Settings" },
   ];
 
   const toggleSidebar = () => {
