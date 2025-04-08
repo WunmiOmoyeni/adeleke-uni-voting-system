@@ -47,7 +47,7 @@ const CandidateTable = ({
               <td className="py-2 px-4 border-b">
                 {candidate.image ? (
                   typeof candidate.image === 'string' ? (
-                    <img
+                    <Image
                       src={candidate.image}
                       alt={candidate.name}
                       className="w-12 h-12 rounded-full object-cover"

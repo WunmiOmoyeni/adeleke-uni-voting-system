@@ -6,6 +6,7 @@ import { firestore, auth } from '../../../../firebaseConfig';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
+import Image from 'next/image';
 
 interface Candidate {
   id: string;
@@ -287,7 +288,7 @@ const ResultsPage = () => {
                       <div className="flex items-center">
                         <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 mr-4">
                           {candidate.imageUrl ? (
-                            <img
+                            <Image
                               src={candidate.imageUrl}
                               alt={candidate.name}
                               className="w-full h-full object-cover"

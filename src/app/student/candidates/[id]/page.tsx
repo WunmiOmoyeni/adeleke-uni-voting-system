@@ -104,7 +104,7 @@ const CandidateProfile = () => {
         <div className="bg-white rounded-lg shadow-md p-6 flex flex-col md:flex-row items-center">
           <div className="w-40 h-40 md:w-60 md:h-60 bg-gray-200 rounded-full overflow-hidden mb-4 md:mb-0">
             {candidate?.imageUrl ? (
-              <img
+              <Image
                 src={candidate.imageUrl}
                 alt={candidate.name}
                 width={300}

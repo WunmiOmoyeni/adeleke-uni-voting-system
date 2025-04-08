@@ -14,6 +14,8 @@ import { firestore, auth } from "../../../../firebaseConfig";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
+import Image from "next/image";
+
 interface Candidate {
   id: string;
   name: string;
@@ -289,7 +291,7 @@ const VotingPage = () => {
                   >
                     <div className="relative h-48 overflow-hidden bg-blue-100">
                       {candidate.imageUrl ? (
-                        <img
+                        <Image
                           src={candidate.imageUrl}
                           alt={candidate.name}
                           className="w-full h-full object-cover"

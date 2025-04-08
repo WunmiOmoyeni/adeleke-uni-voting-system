@@ -9,7 +9,7 @@ const ResetPasswordPage = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+//   const router = useRouter();
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,18 +20,31 @@ const ResetPasswordPage = () => {
     try {
       await sendPasswordResetEmail(auth, email);
       setMessage("Password reset email sent! Check your inbox.");
-    } catch (err: any) {
-      if (err.code === "auth/user-not-found") {
-        setError("No user found with this email.");
-      } else if (err.code === "auth/invalid-email") {
-        setError("Invalid email format.");
-      } else {
-        setError("Something went wrong. Please try again.");
-        console.error(err);
+    } catch (err: unknown) {
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "code" in err &&
+          typeof (err as any).code === "string"
+        ) {
+          const errorCode = (err as any).code;
+      
+          if (errorCode === "auth/user-not-found") {
+            setError("No user found with this email.");
+          } else if (errorCode === "auth/invalid-email") {
+            setError("Invalid email format.");
+          } else {
+            setError("Something went wrong. Please try again.");
+            console.error(err);
+          }
+        } else {
+          setError("An unexpected error occurred. Please try again later.");
+          console.error("Unknown error:", err);
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
+      
   };
 
   return (

@@ -8,7 +8,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import Link from "next/link";
 import auLogo from "../../../images/au.png";
 import Image from "next/image";
-import { unsubscribe } from "diagnostics_channel";
+// import { unsubscribe } from "diagnostics_channel";
 
 interface Student {
   firstName: string;
@@ -110,7 +110,7 @@ const StudentDashboard = () => {
 
     listeners.forEach(unsubscribe => unsubscribe());
     setListeners([]);
-    
+
     try {
       await signOut(auth);
       router.push("/login");
