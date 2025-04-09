@@ -175,6 +175,8 @@ const RegisterPage = () => {
         createdAt: new Date().toISOString(),
       });
 
+
+
       // Create entry in matric_lookup collection
       await setDoc(
         doc(firestore, "matric_lookup", matricNumber.replace("/", "-")),

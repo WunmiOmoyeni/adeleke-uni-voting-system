@@ -65,7 +65,6 @@ const LoginPage = () => {
       if (!user.emailVerified) {
         await sendEmailVerification(user);
         setSuccess("Verification email sent! Please check your inbox.");
-        setError("Please verify your email before logging in.");
         setLoading(false);
         return;
       }
