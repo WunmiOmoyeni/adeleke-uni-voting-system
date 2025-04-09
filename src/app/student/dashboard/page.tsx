@@ -2,13 +2,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { auth, firestore } from "../../../../firebaseConfig";
-import { doc, getDoc, Timestamp, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, Timestamp, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import LogoutModal from "@/components/logoutModal";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import Link from "next/link";
 import auLogo from "../../../images/au.png";
 import Image from "next/image";
-// import { unsubscribe } from "diagnostics_channel";
 
 interface Student {
   firstName: string;
@@ -89,16 +88,24 @@ const StudentDashboard = () => {
       if (!studentId) return;
       
       try {
+        // Convert from one-time query to a listener
         const votesQuery = query(
           collection(firestore, "votes"),
           where("studentId", "==", studentId),
           where("submitted", "==", true)
         );
         
-        const votesSnapshot = await getDocs(votesQuery);
-        setHasVoted(!votesSnapshot.empty);
+        const unsubscribeVotes = onSnapshot(votesQuery, (snapshot) => {
+          setHasVoted(!snapshot.empty);
+        }, (error) => {
+          console.error("Error checking voting status:", error);
+        });
+        
+        // Add this listener to our cleanup array
+        addListener(unsubscribeVotes);
+        
       } catch (error) {
-        console.error("Error checking voting status:", error);
+        console.error("Error setting up voting status listener:", error);
       }
     };
     
@@ -108,6 +115,7 @@ const StudentDashboard = () => {
   const handleLogout = async () => {
     setShowLogoutModal(false);
 
+    // Unsubscribe from all listeners before signing out
     listeners.forEach(unsubscribe => unsubscribe());
     setListeners([]);
 
@@ -121,13 +129,25 @@ const StudentDashboard = () => {
 
   useEffect(() => {
     const fetchElectionData = async () => {
-      const electionRef = doc(firestore, "election", "status");
-      const electionSnap = await getDoc(electionRef);
-
-      if (electionSnap.exists()) {
-        setElection(electionSnap.data() as Election);
-      } else {
-        console.error("No election data found!");
+      try {
+        // Convert from one-time getDoc to a listener with onSnapshot
+        const electionRef = doc(firestore, "election", "status");
+        
+        const unsubscribeElection = onSnapshot(electionRef, (doc) => {
+          if (doc.exists()) {
+            setElection(doc.data() as Election);
+          } else {
+            console.error("No election data found!");
+          }
+        }, (error) => {
+          console.error("Error getting election updates:", error);
+        });
+        
+        // Add this listener to our cleanup array
+        addListener(unsubscribeElection);
+        
+      } catch (error) {
+        console.error("Error setting up election listener:", error);
       }
     };
 

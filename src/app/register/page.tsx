@@ -1,5 +1,5 @@
 "use client";
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import {
@@ -9,6 +9,7 @@ import {
   where,
   getDocs,
   collection,
+  getDoc,
 } from "firebase/firestore";
 import { firestore } from "../../../firebaseConfig";
 import { auth } from "../../../firebaseConfig";
@@ -32,8 +33,60 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
   const router = useRouter();
+
+  // Check if registration is still open based on candidate deadline
+  useEffect(() => {
+    const checkRegistrationDeadline = async () => {
+      try {
+        const electionRef = doc(firestore, "election", "status");
+        const electionSnap = await getDoc(electionRef);
+
+        if (electionSnap.exists()) {
+          const electionData = electionSnap.data();
+          if (electionData.candidateDeadline) {
+            const deadlineDate = new Date(electionData.candidateDeadline);
+            const currentDate = new Date();
+
+            // Check if current date is before the deadline
+            if (currentDate < deadlineDate) {
+              setIsRegistrationOpen(true);
+            } else {
+              // Show alert and redirect if deadline has passed
+              Swal.fire({
+                title: "Registration Closed",
+                text: "The candidate registration deadline has passed.",
+                icon: "warning",
+                confirmButtonText: "OK"
+              }).then((result) => {
+                if (result.isConfirmed) {
+                  // Redirect to login page when OK is clicked
+                  router.push("/login"); 
+                }
+              });
+            }
+          } else {
+            // If candidateDeadline field doesn't exist, default to allowing registration
+            setIsRegistrationOpen(true);
+          }
+        } else {
+          // If election document doesn't exist, default to allowing registration
+          setIsRegistrationOpen(true);
+        }
+      } catch (error) {
+        console.error("Error checking registration deadline:", error);
+        // On error, we'll allow registration to avoid blocking legitimate users
+        setIsRegistrationOpen(true);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    checkRegistrationDeadline();
+  }, [router]);
 
   const validateMatricNumber = (matricNum: string) => {
     return /^\d{2}\/\d{4}$/.test(matricNum);
@@ -61,6 +114,29 @@ const RegisterPage = () => {
     event.preventDefault();
     setError(null);
     setLoading(true);
+
+    // Double-check if registration is still open
+    try {
+      const electionRef = doc(firestore, "election", "status");
+      const electionSnap = await getDoc(electionRef);
+      
+      if (electionSnap.exists()) {
+        const electionData = electionSnap.data();
+        if (electionData.candidateDeadline) {
+          const deadlineDate = new Date(electionData.candidateDeadline);
+          const currentDate = new Date();
+          
+          if (currentDate > deadlineDate) {
+            setError("Registration deadline has passed");
+            setLoading(false);
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error rechecking deadline:", error);
+      // Continue with registration if we can't check deadline
+    }
 
     try {
       // Validate matric number format
@@ -219,6 +295,20 @@ const RegisterPage = () => {
   };
 
   const levels = ["100", "200", "300", "400", "500"];
+
+  // Show loading spinner while checking deadline
+  if (initialLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500"></div>
+      </div>
+    );
+  }
+
+  // Only show registration form if registration is still open
+  if (!isRegistrationOpen) {
+    return null; // This will prevent rendering while the redirect happens
+  }
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">

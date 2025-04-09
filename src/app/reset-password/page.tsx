@@ -3,6 +3,7 @@ import { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../../firebaseConfig"; // update the path if different
 import { FirebaseError } from "firebase/app";
+import Link from "next/link";
 // import { useRouter } from "next/navigation";
 
 const ResetPasswordPage = () => {
@@ -10,7 +11,7 @@ const ResetPasswordPage = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-//   const router = useRouter();
+  //   const router = useRouter();
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,26 +23,25 @@ const ResetPasswordPage = () => {
       await sendPasswordResetEmail(auth, email);
       setMessage("Password reset email sent! Check your inbox.");
     } catch (err: unknown) {
-        if (err instanceof FirebaseError) {
-          switch (err.code) {
-            case "auth/user-not-found":
-              setError("No user found with this email.");
-              break;
-            case "auth/invalid-email":
-              setError("Invalid email format.");
-              break;
-            default:
-              setError("Something went wrong. Please try again.");
-              console.error("Firebase error:", err);
-          }
-        } else {
-          setError("An unexpected error occurred. Please try again later.");
-          console.error("Unknown error:", err);
+      if (err instanceof FirebaseError) {
+        switch (err.code) {
+          case "auth/user-not-found":
+            setError("No user found with this email.");
+            break;
+          case "auth/invalid-email":
+            setError("Invalid email format.");
+            break;
+          default:
+            setError("Something went wrong. Please try again.");
+            console.error("Firebase error:", err);
         }
-      } finally {
-        setLoading(false);
+      } else {
+        setError("An unexpected error occurred. Please try again later.");
+        console.error("Unknown error:", err);
       }
-      
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,6 +74,15 @@ const ResetPasswordPage = () => {
           >
             {loading ? "Sending..." : "Send Reset Link"}
           </button>
+
+          <Link href="/login" className="block mt-4 text-center">
+            <button
+              type="button"
+              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 rounded transition-colors duration-200"
+            >
+              Return to Login Page
+            </button>
+          </Link>
         </form>
       </div>
     </main>
