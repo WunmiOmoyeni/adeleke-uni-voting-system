@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { auth, firestore } from "../../../../firebaseConfig";
-import { doc, getDoc, Timestamp, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, Timestamp, collection, query, where, onSnapshot } from "firebase/firestore";
 import LogoutModal from "@/components/logoutModal";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import Link from "next/link";
