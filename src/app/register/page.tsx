@@ -293,7 +293,9 @@ const RegisterPage = () => {
       "Political Sciences",
     ],
 
-    "Faculty of Law": [], // Empty array for faculties without departments
+    "Faculty of Law": [
+      "Law"
+    ], // Empty array for faculties without departments
   };
 
   const levels = ["100", "200", "300", "400", "500"];
